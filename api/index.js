@@ -7,7 +7,7 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 const manifest = {
   id: "org.swegerhub.addon",
-  version: "1.1.2",
+  version: "1.1.3",
   name: "SweGerHub",
   description: "Svenska och tyska filmer, serier samt svensk krim/thriller från TMDB",
   resources: ["catalog", "stream"],
@@ -16,33 +16,30 @@ const manifest = {
     {
       type: "movie",
       id: "swedish_crime",
-      name: "Svensk Krim & Thriller (Film)",
-      genres: ["Alla", "Kriminal", "Thriller", "Mysterium"]
+      name: "Svenska & Nordiska Filmer",
+      genres: ["Alla", "Kriminal", "Drama", "Action", "Thriller"]
     },
     {
       type: "series",
       id: "swedish_crime_series",
-      name: "Svensk Krim & Deckare (Serier)",
-      genres: ["Alla", "Kriminal", "Thriller", "Mysterium"]
+      name: "Svenska & Nordiska Serier",
+      genres: ["Alla", "Kriminal", "Drama", "Mysterium"]
     },
     {
       type: "movie",
       id: "sweger_movies",
-      name: "SweGer Filmer",
-      genres: ["Action", "Komedi", "Drama", "Kriminal", "Skräck", "Thriller", "Sci-Fi"]
+      name: "SweGer Filmer (Svenskt & Tyskt)",
+      genres: ["Alla", "Action", "Komedi", "Drama", "Thriller"]
     },
     {
       type: "series",
       id: "sweger_series",
-      name: "SweGer Serier",
-      genres: ["Action", "Komedi", "Drama", "Kriminal", "Skräck", "Thriller", "Sci-Fi"]
+      name: "SweGer Serier (Svenskt & Tyskt)",
+      genres: ["Alla", "Action", "Drama", "Kriminal"]
     }
   ],
   idPrefixes: ["tt"]
 };
-
-const MOVIE_GENRES = { 'Kriminal': 80, 'Thriller': 53, 'Mysterium': 9648, 'Action': 28, 'Komedi': 35, 'Drama': 18, 'Skräck': 27, 'Sci-Fi': 878 };
-const TV_GENRES = { 'Kriminal': 80, 'Thriller': 9648, 'Mysterium': 9648, 'Action': 10759, 'Komedi': 35, 'Drama': 18, 'Skräck': 9648, 'Sci-Fi': 10765 };
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -64,35 +61,22 @@ app.get('/manifest.json', (req, res) => {
   res.json(manifest);
 });
 
-// Catalog endpoint
+// Catalog endpoint med bredare sökning
 app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
-  const { type, id, extra } = req.params;
-
-  let genre = null;
-  if (extra) {
-    const params = new URLSearchParams(extra);
-    genre = params.get('genre');
-  }
+  const { type, id } = req.params;
 
   try {
     const isMovie = type === 'movie';
     const endpoint = isMovie ? '/discover/movie' : '/discover/tv';
-    const genreMap = isMovie ? MOVIE_GENRES : TV_GENRES;
 
     let url = `${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&page=1`;
 
     if (id === 'swedish_crime' || id === 'swedish_crime_series') {
+      // Hämta allt med svenska som originalspråk utan hårdstrikta genrekrav
       url += `&with_original_language=sv`;
-      if (genre && genre !== 'Alla' && genreMap[genre]) {
-        url += `&with_genres=${genreMap[genre]}`;
-      } else {
-        url += `&with_genres=80|53|9648`;
-      }
     } else if (id === 'sweger_movies' || id === 'sweger_series') {
+      // Hämta både svenska och tyska
       url += `&with_original_language=sv|de`;
-      if (genre && genre !== 'Alla' && genreMap[genre]) {
-        url += `&with_genres=${genreMap[genre]}`;
-      }
     } else {
       return res.json({ metas: [] });
     }
