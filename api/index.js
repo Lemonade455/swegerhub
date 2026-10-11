@@ -1,34 +1,49 @@
 const express = require('express');
 const path = require('path');
-const manifest = require('../manifest.json');
 
 const app = express();
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-// TMDB Genre Maps för Svensk Krim/Thriller
-const MOVIE_GENRES = {
-  'Kriminal': 80,
-  'Thriller': 53,
-  'Mysterium': 9648,
-  'Action': 28,
-  'Komedi': 35,
-  'Drama': 18,
-  'Skräck': 27,
-  'Sci-Fi': 878
+// Manifest hårdkodad för att undvika fil-path fel på Vercel
+const manifest = {
+  id: "org.swegerhub.addon",
+  version: "1.1.0",
+  name: "SweGerHub",
+  description: "Svenska och tyska filmer, serier samt svensk krim/thriller från TMDB",
+  resources: ["catalog", "stream"],
+  types: ["movie", "series"],
+  catalogs: [
+    {
+      type: "movie",
+      id: "swedish_crime",
+      name: "Svensk Krim & Thriller (Film)",
+      genres: ["Alla", "Kriminal", "Thriller", "Mysterium"]
+    },
+    {
+      type: "series",
+      id: "swedish_crime_series",
+      name: "Svensk Krim & Deckare (Serier)",
+      genres: ["Alla", "Kriminal", "Thriller", "Mysterium"]
+    },
+    {
+      type: "movie",
+      id: "sweger_movies",
+      name: "SweGer Filmer",
+      genres: ["Action", "Komedi", "Drama", "Kriminal", "Skräck", "Thriller", "Sci-Fi"]
+    },
+    {
+      type: "series",
+      id: "sweger_series",
+      name: "SweGer Serier",
+      genres: ["Action", "Komedi", "Drama", "Kriminal", "Skräck", "Thriller", "Sci-Fi"]
+    }
+  ],
+  idPrefixes: ["tt"]
 };
 
-const TV_GENRES = {
-  'Kriminal': 80,
-  'Thriller': 9648,
-  'Mysterium': 9648,
-  'Action': 10759,
-  'Komedi': 35,
-  'Drama': 18,
-  'Skräck': 9648,
-  'Sci-Fi': 10765
-};
-
+const MOVIE_GENRES = { 'Kriminal': 80, 'Thriller': 53, 'Mysterium': 9648, 'Action': 28, 'Komedi': 35, 'Drama': 18, 'Skräck': 27, 'Sci-Fi': 878 };
+const TV_GENRES = { 'Kriminal': 80, 'Thriller': 9648, 'Mysterium': 9648, 'Action': 10759, 'Komedi': 35, 'Drama': 18, 'Skräck': 9648, 'Sci-Fi': 10765 };
 const CRIME_GENRE_IDS = '80,53,9648';
 
 app.use((req, res, next) => {
@@ -37,18 +52,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Statiska filer & konfigurationssida
-app.use(express.static(path.join(__dirname, '../public')));
+// Statiska filer & konfiguration
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.get('/configure', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/configure.html'));
+  res.sendFile(path.join(process.cwd(), 'public', 'configure.html'));
 });
 
 app.get('/', (req, res) => {
   res.redirect('/configure');
 });
 
-// Manifest endpoint
 app.get('/manifest.json', (req, res) => {
   res.json(manifest);
 });
@@ -118,7 +132,7 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
   }
 });
 
-// Stream endpoint med finjusterat filter
+// Stream endpoint
 app.get('/stream/:type/:id.json', async (req, res) => {
   const { type, id } = req.params;
 
@@ -130,10 +144,8 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
     const filtered = data.streams.filter(stream => {
       const text = `${stream.title || ''} ${stream.name || ''}`.toLowerCase();
-      
       const isSwedish = text.includes('swesub') || text.includes('swedish') || text.includes('swe audio');
       const isGerman = text.includes('german') || text.includes('.ger.') || text.includes('ger-');
-
       return isSwedish || isGerman;
     });
 
