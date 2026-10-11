@@ -5,10 +5,9 @@ const app = express();
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-// Manifest hårdkodad för att undvika fil-path fel på Vercel
 const manifest = {
   id: "org.swegerhub.addon",
-  version: "1.1.0",
+  version: "1.1.1",
   name: "SweGerHub",
   description: "Svenska och tyska filmer, serier samt svensk krim/thriller från TMDB",
   resources: ["catalog", "stream"],
@@ -44,7 +43,6 @@ const manifest = {
 
 const MOVIE_GENRES = { 'Kriminal': 80, 'Thriller': 53, 'Mysterium': 9648, 'Action': 28, 'Komedi': 35, 'Drama': 18, 'Skräck': 27, 'Sci-Fi': 878 };
 const TV_GENRES = { 'Kriminal': 80, 'Thriller': 9648, 'Mysterium': 9648, 'Action': 10759, 'Komedi': 35, 'Drama': 18, 'Skräck': 9648, 'Sci-Fi': 10765 };
-const CRIME_GENRE_IDS = '80,53,9648';
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -52,7 +50,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Statiska filer & konfiguration
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.get('/configure', (req, res) => {
@@ -89,11 +86,12 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
       if (genre && genre !== 'Alla' && genreMap[genre]) {
         url += `&with_genres=${genreMap[genre]}`;
       } else {
-        url += `&with_genres=${CRIME_GENRE_IDS}`;
+        // Använd pipe (|) för OR istället för kommatecken (AND) så att titlar med ETT av ämnena visas
+        url += `&with_genres=80|53|9648`;
       }
     } else if (id === 'sweger_movies' || id === 'sweger_series') {
       url += `&with_original_language=sv|de`;
-      if (genre && genreMap[genre]) {
+      if (genre && genre !== 'Alla' && genreMap[genre]) {
         url += `&with_genres=${genreMap[genre]}`;
       }
     } else {
@@ -103,25 +101,32 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
     const tmdbRes = await fetch(url);
     const tmdbData = await tmdbRes.json();
 
-    if (!tmdbData.results) return res.json({ metas: [] });
+    if (!tmdbData.results || tmdbData.results.length === 0) {
+      return res.json({ metas: [] });
+    }
 
+    // Hämta externa IMDb ID:n
     const metas = await Promise.all(
-      tmdbData.results.slice(0, 20).map(async (item) => {
-        const extUrl = `${TMDB_BASE_URL}/${isMovie ? 'movie' : 'tv'}/${item.id}/external_ids?api_key=${TMDB_API_KEY}`;
-        const extRes = await fetch(extUrl);
-        const extData = await extRes.json();
+      tmdbData.results.map(async (item) => {
+        try {
+          const extUrl = `${TMDB_BASE_URL}/${isMovie ? 'movie' : 'tv'}/${item.id}/external_ids?api_key=${TMDB_API_KEY}`;
+          const extRes = await fetch(extUrl);
+          const extData = await extRes.json();
 
-        if (!extData.imdb_id) return null;
+          if (!extData.imdb_id) return null;
 
-        return {
-          id: extData.imdb_id,
-          type: type,
-          name: isMovie ? item.title : item.name,
-          poster: item.poster_path ? `https://image.tmdb.org/t500${item.poster_path}` : null,
-          background: item.backdrop_path ? `https://image.tmdb.org/t1280${item.backdrop_path}` : null,
-          description: item.overview,
-          releaseInfo: (isMovie ? item.release_date : item.first_air_date)?.substring(0, 4)
-        };
+          return {
+            id: extData.imdb_id,
+            type: type,
+            name: isMovie ? item.title : item.name,
+            poster: item.poster_path ? `https://image.tmdb.org/t500${item.poster_path}` : null,
+            background: item.backdrop_path ? `https://image.tmdb.org/t1280${item.backdrop_path}` : null,
+            description: item.overview || "Ingen beskrivning tillgänglig.",
+            releaseInfo: (isMovie ? item.release_date : item.first_air_date)?.substring(0, 4)
+          };
+        } catch (e) {
+          return null;
+        }
       })
     );
 
@@ -144,12 +149,12 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
     const filtered = data.streams.filter(stream => {
       const text = `${stream.title || ''} ${stream.name || ''}`.toLowerCase();
-      const isSwedish = text.includes('swesub') || text.includes('swedish') || text.includes('swe audio');
+      const isSwedish = text.includes('swesub') || text.includes('swedish') || text.includes('swe audio') || text.includes('nordic');
       const isGerman = text.includes('german') || text.includes('.ger.') || text.includes('ger-');
       return isSwedish || isGerman;
     });
 
-    res.json({ streams: filtered });
+    res.json({ streams: filtered.length > 0 ? filtered : data.streams.slice(0, 5) });
   } catch (err) {
     console.error(err);
     res.json({ streams: [] });
