@@ -1,0 +1,13 @@
+{
+  "name": "swegerhub",
+  "version": "1.1.0",
+  "description": "Stremio addon listing Swedish and German movies, series and crime via TMDB",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
+  }
+}

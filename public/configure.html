@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SweGerHub - Konfigurering</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f0c1b;
+      --bg-card: #18142a;
+      --bg-input: #231d3d;
+      --accent: #7b5bf5;
+      --accent-hover: #6943f4;
+      --text-main: #f3f3f7;
+      --text-muted: #a5a1b8;
+      --border: #2d264a;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), #b443f4);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(123, 91, 245, 0.3);
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .info-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">SG</div>
+      <h1>SweGerHub</h1>
+      <p class="subtitle">Svenskt & Tyskt innehåll för Stremio</p>
+    </div>
+
+    <div class="info-box">
+      Innehåller kataloger för Svenska filmer, Svensk Krim/Thriller och Tyskt innehåll sorterat via TMDB. Streams hämtas automatiskt från öppna källor.
+    </div>
+
+    <div class="actions">
+      <a href="#" id="installBtn" class="btn btn-primary">
+        <span>Installera i Stremio</span>
+      </a>
+      <button type="button" id="copyBtn" class="btn btn-secondary">
+        <span>Kopiera Manifest-länk</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const installBtn = document.getElementById('installBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function getManifestUrl() {
+      return `${window.location.protocol}//${window.location.host}/manifest.json`;
+    }
+
+    const manifestUrl = getManifestUrl();
+    installBtn.href = manifestUrl.replace(/^https?:\/\//, 'stremio://');
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(manifestUrl).then(() => {
+        copyBtn.innerText = 'Kopierad!';
+        setTimeout(() => copyBtn.innerText = 'Kopiera Manifest-länk', 2000);
+      });
+    });
+  </script>
+</body>
+</html>
