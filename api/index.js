@@ -7,7 +7,7 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 const manifest = {
   id: "org.swegerhub.addon",
-  version: "1.1.1",
+  version: "1.1.2",
   name: "SweGerHub",
   description: "Svenska och tyska filmer, serier samt svensk krim/thriller från TMDB",
   resources: ["catalog", "stream"],
@@ -86,7 +86,6 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
       if (genre && genre !== 'Alla' && genreMap[genre]) {
         url += `&with_genres=${genreMap[genre]}`;
       } else {
-        // Använd pipe (|) för OR istället för kommatecken (AND) så att titlar med ETT av ämnena visas
         url += `&with_genres=80|53|9648`;
       }
     } else if (id === 'sweger_movies' || id === 'sweger_series') {
@@ -105,7 +104,6 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
       return res.json({ metas: [] });
     }
 
-    // Hämta externa IMDb ID:n
     const metas = await Promise.all(
       tmdbData.results.map(async (item) => {
         try {
@@ -119,8 +117,8 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
             id: extData.imdb_id,
             type: type,
             name: isMovie ? item.title : item.name,
-            poster: item.poster_path ? `https://image.tmdb.org/t500${item.poster_path}` : null,
-            background: item.backdrop_path ? `https://image.tmdb.org/t1280${item.backdrop_path}` : null,
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+            background: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
             description: item.overview || "Ingen beskrivning tillgänglig.",
             releaseInfo: (isMovie ? item.release_date : item.first_air_date)?.substring(0, 4)
           };
